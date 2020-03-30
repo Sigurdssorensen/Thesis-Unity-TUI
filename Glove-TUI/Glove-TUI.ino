@@ -11,11 +11,13 @@ const int resetCameraButtonPin = 14;
 
 long timer = 0;
 
-int newUpdateCameraButtonState = 0;
-int newResetCameraButtonState = 0;
+float fullRotation = 360.0;
 
-int currentUpdateCameraButtonState = 0;
-int currentResetCameraButtonState = 0;
+int updateCameraButtonState = 0;
+int resetCameraButtonState = 0;
+
+bool updateButtonIsHeld = false;
+bool resetButtonIsHeld = false;
 
 float currentCameraX = 0.0;
 float currentCameraY = 0.0;
@@ -44,36 +46,53 @@ void setup() {
 void loop() {
   mpu6050.update();
 
-  if(millis() - timer > 1000){
+  if(millis() - timer > 10){
     Serial.flush();
     
-    newUpdateCameraButtonState = digitalRead(updateCameraButtonPin);
-    newResetCameraButtonState = digitalRead(resetCameraButtonPin);
+    updateCameraButtonState = digitalRead(updateCameraButtonPin);
+    resetCameraButtonState = digitalRead(resetCameraButtonPin);
 
-//    resetIfPushed();
-    Serial.println(newUpdateCameraButtonState);
+    resetIfPushed();
     
     physicalCameraX = mpu6050.getAngleX();
-    physicalCameraY = mpu6050.getAngleY()*-1;
-    physicalCameraZ = mpu6050.getAngleZ()*-1;
+    physicalCameraY = mpu6050.getAngleY();
+    physicalCameraZ = mpu6050.getAngleZ();
 
-//    updateIfPushed();
+    if(physicalCameraX < 0.0) {
+      physicalCameraX += fullRotation;
+    }
     
-    payloadCameraX = String(currentCameraX + (physicalCameraX - currentCameraX));
-    payloadCameraY = String(currentCameraY + (physicalCameraY - currentCameraY));
-    payloadCameraZ = String(currentCameraZ + (physicalCameraZ - currentCameraZ));
+    if(physicalCameraY < 0) {
+      physicalCameraY += fullRotation;
+    }
     
-    payload = payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
-//    Serial.println(payload);
+    if(physicalCameraZ < 0) {
+      physicalCameraZ += fullRotation;
+    }
+
+    updateIfPushed();
+    
+    payloadCameraX = String(physicalCameraX - currentCameraX);
+    payloadCameraY = String(physicalCameraY + currentCameraY);
+    payloadCameraZ = String(physicalCameraZ + currentCameraZ);
+    
+    if(!updateButtonIsHeld) {
+      payload = payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
+    } else {
+      payload = String(currentCameraX) + " " + String(currentCameraY) + " " + String(currentCameraZ); 
+    }
+    Serial.println(payload);
    
     timer = millis();
   }
 }
 
 void resetIfPushed() {
-  if(newResetCameraButtonState != currentResetCameraButtonState) {
+  if(resetCameraButtonState == 1 && !resetButtonIsHeld) {
+    resetButtonIsHeld = true;
     resetCamera();
-    currentResetCameraButtonState = newResetCameraButtonState;
+  } else if (resetCameraButtonState == 0 && resetButtonIsHeld) {
+    resetButtonIsHeld = false;
   }
 }
 
@@ -81,12 +100,15 @@ void resetCamera() {
   currentCameraX = 0.0;
   currentCameraY = 0.0;
   currentCameraZ = 0.0;
+  mpu6050.calcGyroOffsets(true);
 }
 
 void updateIfPushed() {
-  if(newUpdateCameraButtonState != currentUpdateCameraButtonState) {
+  if(updateCameraButtonState == 1 && !updateButtonIsHeld) {
+    updateButtonIsHeld = true;
     updateCamera();
-    currentUpdateCameraButtonState = newUpdateCameraButtonState;
+  } else if (updateCameraButtonState == 0 && updateButtonIsHeld) {
+    updateButtonIsHeld = false;
   }
 }
 
@@ -94,6 +116,7 @@ void updateCamera() {
   currentCameraX = physicalCameraX;
   currentCameraY = physicalCameraY;
   currentCameraZ = physicalCameraZ;
+  Serial.println(currentCameraX);
 }
 
 

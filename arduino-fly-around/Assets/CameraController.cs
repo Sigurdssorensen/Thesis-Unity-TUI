@@ -49,8 +49,8 @@ public class CameraController : MonoBehaviour
       {
         serialPortInput = serialPort.ReadLine().Split(' ');
         physicalX = float.Parse(serialPortInput[0]);
-        physicalY = float.Parse(serialPortInput[1]); // *-1
-        physicalZ = float.Parse(serialPortInput[2]); // *-1
+        physicalY = float.Parse(serialPortInput[1])*-1;
+        physicalZ = float.Parse(serialPortInput[2])*-1;
         
         if(!IsInBufferRange(physicalY, 'y'))
         {
@@ -70,6 +70,7 @@ public class CameraController : MonoBehaviour
     catch (Exception e)
     {
       print("something wrong" + e);
+      print(serialPort.ReadLine());
     }
 
     // try {
