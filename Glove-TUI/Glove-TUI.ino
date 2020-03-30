@@ -6,17 +6,14 @@
 
 MPU6050 mpu6050(Wire);
 
-const int updateCameraButtonPin = 15;
 const int resetCameraButtonPin = 14;
 
 long timer = 0;
 
 float fullRotation = 360.0;
 
-int updateCameraButtonState = 0;
 int resetCameraButtonState = 0;
 
-bool updateButtonIsHeld = false;
 bool resetButtonIsHeld = false;
 
 float currentCameraX = 0.0;
@@ -34,7 +31,6 @@ String payloadCameraZ;
 String payload;
 
 void setup() {
-  pinMode(updateCameraButtonPin, INPUT);
   pinMode(resetCameraButtonPin, INPUT);
   
   Serial.begin(9600);
@@ -43,13 +39,14 @@ void setup() {
   mpu6050.calcGyroOffsets(true);
 }
 
+void(* resetFunc) (void) = 0;
+
 void loop() {
   mpu6050.update();
 
-  if(millis() - timer > 10){
+  if(millis() - timer > 16){
     Serial.flush();
     
-    updateCameraButtonState = digitalRead(updateCameraButtonPin);
     resetCameraButtonState = digitalRead(resetCameraButtonPin);
 
     resetIfPushed();
@@ -58,7 +55,7 @@ void loop() {
     physicalCameraY = mpu6050.getAngleY();
     physicalCameraZ = mpu6050.getAngleZ();
 
-    if(physicalCameraX < 0.0) {
+    if(physicalCameraX < 0) {
       physicalCameraX += fullRotation;
     }
     
@@ -69,18 +66,13 @@ void loop() {
     if(physicalCameraZ < 0) {
       physicalCameraZ += fullRotation;
     }
-
-    updateIfPushed();
     
     payloadCameraX = String(physicalCameraX - currentCameraX);
     payloadCameraY = String(physicalCameraY + currentCameraY);
     payloadCameraZ = String(physicalCameraZ + currentCameraZ);
     
-    if(!updateButtonIsHeld) {
-      payload = payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
-    } else {
-      payload = String(currentCameraX) + " " + String(currentCameraY) + " " + String(currentCameraZ); 
-    }
+    payload = payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
+
     Serial.println(payload);
    
     timer = millis();
@@ -100,23 +92,6 @@ void resetCamera() {
   currentCameraX = 0.0;
   currentCameraY = 0.0;
   currentCameraZ = 0.0;
-  mpu6050.calcGyroOffsets(true);
-}
-
-void updateIfPushed() {
-  if(updateCameraButtonState == 1 && !updateButtonIsHeld) {
-    updateButtonIsHeld = true;
-    updateCamera();
-  } else if (updateCameraButtonState == 0 && updateButtonIsHeld) {
-    updateButtonIsHeld = false;
-  }
-}
-
-void updateCamera() {
-  currentCameraX = physicalCameraX;
-  currentCameraY = physicalCameraY;
-  currentCameraZ = physicalCameraZ;
-  Serial.println(currentCameraX);
 }
 
 

@@ -54,11 +54,21 @@ public class CameraController : MonoBehaviour
         
         if(!IsInBufferRange(physicalY, 'y'))
         {
-          digitalX = physicalY; // yaw
+          digitalX = physicalY; // pitch
         }
         if(!IsInBufferRange(physicalZ, 'z'))
         {
-          digitalY = physicalZ; // pitch
+          print(physicalZ);
+          if(physicalZ < -30 && physicalZ > -100) 
+          {
+            digitalY -= 2;
+          } else if (physicalZ > -330 && physicalZ < -200)
+          {
+            digitalY += 2;
+          } else
+          {
+            digitalY = physicalZ; // yaw
+          }
         }
         if(!IsInBufferRange(physicalX, 'x'))
         {
