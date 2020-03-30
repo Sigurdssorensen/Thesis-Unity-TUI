@@ -6,20 +6,27 @@ using System.IO.Ports;
 
 public class CameraController : MonoBehaviour
 {
-  public SerialPort sp = new SerialPort("/dev/cu.SLAB_USBtoUART", 9600);
-  public float spInput;
+  private SerialPort serialPort = new SerialPort("/dev/cu.SLAB_USBtoUART", 9600);
+  private string[] serialPortInput = new string[3];
+  protected float physicalX = 0.0f;
+  protected float physicalY = 0.0f;
+  protected float physicalZ = 0.0f;
+
   public GameObject camera;
-  float speed = 5.0f;
-  float x = 0.0f;
-  float y = 0.0f;
-  float z = 0.0f;
-  int axisHalfRotation = 180;
+  protected float speed = 5.0f;
+  protected float digitalX = 0.0f;
+  protected float digitalY = 0.0f;
+  protected float digitalZ = 0.0f;
+  private int axisHalfRotation = 180;
+
+  protected float buffer = 0.02f;
 
   // Start is called before the first frame update
   void Start()
   {
-    try {
-      sp.Open();
+    try 
+    {
+      serialPort.Open();
     } catch (Exception e)
     { 
       print("Nothing really happens");
@@ -31,70 +38,123 @@ public class CameraController : MonoBehaviour
   void Update()
   {
     camera.transform.rotation = Quaternion.Euler(
-      x,
-      y,
-      z
+      digitalX,
+      digitalY,
+      digitalZ
     );
 
-    try {
-      if(sp.IsOpen) {
-        spInput = float.Parse(sp.ReadLine());
-        if (spInput < 1000 - axisHalfRotation) 
+    try 
+    {
+      if(serialPort.IsOpen)
+      {
+        serialPortInput = serialPort.ReadLine().Split(' ');
+        physicalX = float.Parse(serialPortInput[0]);
+        physicalY = float.Parse(serialPortInput[1]); // *-1
+        physicalZ = float.Parse(serialPortInput[2]); // *-1
+        
+        if(!IsInBufferRange(physicalY, 'y'))
         {
-          // if (spInput < 0) 
-          // {
-          //   spInput += 180;
-          // }
-          z = spInput; // arduino x is unity y roll
-        } 
-        else if (spInput < 2000 - axisHalfRotation) 
-        {
-          spInput -= 1000;
-          // if (spInput < 0) 
-          // {
-          //   spInput += 180;
-          // }
-          x = spInput*-1; // arduino y is unity x yaw
-        } 
-        else
-        {
-          spInput -= 2000;
-          spInput *= 2;
-          // if (spInput < 0)
-          // {
-          //   spInput += 180;
-          // }
-          y = spInput*-1; // arduino z is unity z pitch
+          digitalX = physicalY; // yaw
         }
+        if(!IsInBufferRange(physicalZ, 'z'))
+        {
+          digitalY = physicalZ; // pitch
+        }
+        if(!IsInBufferRange(physicalX, 'x'))
+        {
+          digitalZ = physicalX; // roll
+        }
+        Array.Clear(serialPortInput, 0, serialPortInput.Length);
       }
-    } catch (Exception e) {
-      print("mistakes were made!");
+    }
+    catch (Exception e)
+    {
+      print("something wrong" + e);
     }
 
-    if (Input.GetKey("left"))
+    // try {
+    //   if(sp.IsOpen) {
+    //     spInput = float.Parse(sp.ReadLine());
+    //     if (spInput < 1000 - axisHalfRotation) 
+    //     {
+    //       // if (spInput < 0) 
+    //       // {
+    //       //   spInput += 180;
+    //       // }
+    //       z = spInput; // arduino x is unity y roll
+    //     } 
+    //     else if (spInput < 2000 - axisHalfRotation) 
+    //     {
+    //       spInput -= 1000;
+    //       // if (spInput < 0) 
+    //       // {
+    //       //   spInput += 180;
+    //       // }
+    //       x = spInput*-1; // arduino y is unity x yaw
+    //     } 
+    //     else
+    //     {
+    //       spInput -= 2000;
+    //       spInput *= 2;
+    //       // if (spInput < 0)
+    //       // {
+    //       //   spInput += 180;
+    //       // }
+    //       y = spInput*-1; // arduino z is unity z pitch
+    //     }
+    //   }
+    // } catch (Exception e) {
+    //   print("mistakes were made!");
+    // }
+
+    // if (Input.GetKey("left"))
+    // {
+    //   x -= 1.0f;
+    // } else if (Input.GetKey("right")) 
+    // {
+    //   x += 1.0f;
+    // } else if (Input.GetKey("w")) 
+    // {
+    //   camera.transform.Translate(new Vector3(0, speed, 0));
+    // } else if (Input.GetKey("s")) 
+    // {
+    //   camera.transform.Translate(new Vector3(0, -speed, 0));
+    // } else if (Input.GetKey("a")) 
+    // {
+    //   camera.transform.Translate(new Vector3(-speed, 0, 0));
+    // } else if (Input.GetKey("d")) 
+    // {
+    //   camera.transform.Translate(new Vector3(speed, 0, 0));
+    // } else if (Input.GetKey(KeyCode.Space)) 
+    // {
+    //   camera.transform.Translate(new Vector3(0, 0, speed));
+    // } else if (Input.GetKey(KeyCode.LeftControl)) 
+    // {
+    //   camera.transform.Translate(new Vector3(0, 0, -speed));
+    // }
+  }
+
+  Boolean IsInBufferRange(float physicalDegrees, char physicalAxis)
+  {
+    switch (physicalAxis)
     {
-      x -= 1.0f;
-    } else if (Input.GetKey("right")) 
-    {
-      x += 1.0f;
-    } else if (Input.GetKey("w")) 
-    {
-      camera.transform.Translate(new Vector3(0, speed, 0));
-    } else if (Input.GetKey("s")) 
-    {
-      camera.transform.Translate(new Vector3(0, -speed, 0));
-    } else if (Input.GetKey("a")) 
-    {
-      camera.transform.Translate(new Vector3(-speed, 0, 0));
-    } else if (Input.GetKey("d")) 
-    {
-      camera.transform.Translate(new Vector3(speed, 0, 0));
-    } else if (Input.GetKey(KeyCode.Space)) 
-    {
-      camera.transform.Translate(new Vector3(0, 0, speed));
-    } else if (Input.GetKey(KeyCode.LeftControl)) 
-    {
-      camera.transform.Translate(new Vector3(0, 0, -speed));
+      case 'x':
+        return IsInRange(digitalZ, physicalDegrees);
+      case 'y':
+        return IsInRange(digitalX, physicalDegrees);
+      case 'z':
+        return IsInRange(digitalY, physicalDegrees);
+      default:
+        return false;
+    }
+  }
+  Boolean IsInRange(float digitalAxis, float physicalDegrees)
+  {
+    if(digitalAxis - physicalDegrees > -0.09f && digitalAxis - physicalDegrees < 0.09f ) {
+      return true; // 90 - 90.1 = -0.1 if(-0.1 > -0.2) true if(-0.1 < 0.2) true
+    }              // 90 - 89.9 = 0.1 if(0.1 > -0.2) true if(0.1 < 0.2) true
+    else {         // 90 - 90.3 = -0.3 if(-0.3 > -0.2) false if(-0.3 < 0.2) true
+      return false; // 90 - 89.7 = 0.3 if(0.3 > -0.2) true if(0.3 < 0.2) false
     }
   }
 }
