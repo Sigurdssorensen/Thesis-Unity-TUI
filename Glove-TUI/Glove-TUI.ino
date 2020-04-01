@@ -6,15 +6,13 @@
 
 MPU6050 mpu6050(Wire);
 
-const int resetCameraButtonPin = 14;
-
 long timer = 0;
 
-float fullRotation = 360.0;
-
+const int resetCameraButtonPin = 14;
 int resetCameraButtonState = 0;
-
 bool resetButtonIsHeld = false;
+
+float fullRotation = 360.0;
 
 float currentCameraX = 0.0;
 float currentCameraY = 0.0;
@@ -23,6 +21,13 @@ float currentCameraZ = 0.0;
 float physicalCameraX;
 float physicalCameraY;
 float physicalCameraZ;
+
+float continuousYawCameraZ;
+bool continuousYawRunning = false;
+const float yawRightMin = 20;
+const float yawRightMax = 100;
+const float yawLeftMin = 320;
+const float yawLeftMax = 240;
 
 String payloadCameraX;
 String payloadCameraY;
@@ -44,7 +49,7 @@ void(* resetFunc) (void) = 0;
 void loop() {
   mpu6050.update();
 
-  if(millis() - timer > 16){
+  if(millis() - timer > 16) {
     Serial.flush();
     
     resetCameraButtonState = digitalRead(resetCameraButtonPin);
@@ -52,26 +57,12 @@ void loop() {
     resetIfPushed();
     
     physicalCameraX = mpu6050.getAngleX();
-    physicalCameraY = mpu6050.getAngleY();
-    physicalCameraZ = mpu6050.getAngleZ();
+    physicalCameraY = mpu6050.getAngleY()*-1;
+    physicalCameraZ = mpu6050.getAngleZ()*-1;
 
-    if(physicalCameraX < 0) {
-      physicalCameraX += fullRotation;
-    }
-    
-    if(physicalCameraY < 0) {
-      physicalCameraY += fullRotation;
-    }
-    
-    if(physicalCameraZ < 0) {
-      physicalCameraZ += fullRotation;
-    }
-    
-    payloadCameraX = String(physicalCameraX - currentCameraX);
-    payloadCameraY = String(physicalCameraY + currentCameraY);
-    payloadCameraZ = String(physicalCameraZ + currentCameraZ);
-    
-    payload = payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
+    adjustRotation();
+
+    payload = createPayload();
 
     Serial.println(payload);
    
@@ -79,7 +70,8 @@ void loop() {
   }
 }
 
-void resetIfPushed() {
+void resetIfPushed() 
+{
   if(resetCameraButtonState == 1 && !resetButtonIsHeld) {
     resetButtonIsHeld = true;
     resetCamera();
@@ -94,6 +86,101 @@ void resetCamera() {
   currentCameraZ = 0.0;
 }
 
+void adjustRotation() {
+  if(physicalCameraX < 0) {
+    physicalCameraX += fullRotation;
+  }
+  
+  if(physicalCameraY < 0) {
+    physicalCameraY += fullRotation;
+  }
+  
+  if(physicalCameraZ < 0) {
+    physicalCameraZ += fullRotation;
+  }
+}
+
+String createPayload() {
+  if(isRight(physicalCameraZ, yawRightMin, physicalCameraZ, yawRightMax)) { // physicalCameraZ > yawRightMin && physicalCameraZ < yawRightMax
+    continuousYawRight();
+    return assemblePayload(continuousYawCameraZ);
+     
+  } else if (isLeft(physicalCameraZ, yawLeftMin, physicalCameraZ, yawLeftMax)) { // physicalCameraZ < yawLeftMin && physicalCameraZ > yawLeftMax
+    continuousYawLeft();
+    return assemblePayload(continuousYawCameraZ);
+    
+  } else {
+    if(continuousYawRunning) {
+      setCurrentCamera();
+    }
+    return assemblePayload(physicalCameraZ);
+  }
+}
+
+void continuousYawRight() {
+  if(!continuousYawRunning) {
+    continuousYawRunning = true;
+    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ; // set to new null point, equal self + or - physicalCam
+    continuousYawCameraZ += 2;
+    
+  } else {
+    continuousYawCameraZ += 2;
+  }
+}
+
+void continuousYawLeft()
+{
+  if(!continuousYawRunning) {
+    continuousYawRunning = true;
+    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ; // set to new null point, equal self + or - physicalCam
+    continuousYawCameraZ -= 2;
+    
+  } else {
+    continuousYawCameraZ -= 2;
+  }
+}
+
+void setCurrentCamera() {
+  continuousYawRunning = false;
+  if(isRight(physicalCameraZ, 0, physicalCameraZ, 100)) { // physicalCameraZ > 0 && physicalCameraZ < 100
+    currentCameraZ = continuousYawCameraZ - physicalCameraZ;
+    
+  } else if (isLeft(physicalCameraZ, 360, physicalCameraZ, 200)) { // physicalCameraZ < 360 && physicalCameraZ > 200
+    currentCameraZ = continuousYawCameraZ + (360 - physicalCameraZ);
+  }
+}
+
+String assemblePayload(float zAxis) {
+  payloadCameraX = String(physicalCameraX - currentCameraX);
+  payloadCameraY = String(physicalCameraY + currentCameraY);
+  
+  if(continuousYawRunning) {
+    payloadCameraZ = String(zAxis);
+    
+  } else if (isRight(yawRightMin, zAxis, 0, zAxis)) { // zAxis < yawRightMin && zAxis > 0 // yawRightMin > zAxis && 0 < zAxis
+    // right
+    payloadCameraZ = String(currentCameraZ + zAxis);
+    
+  } else if (isLeft(yawLeftMin, zAxis, 360, zAxis)) { // zAxis > yawLeftMin && zAxis < 360 // yawLeftMin < zAxis && 360 > zAxis
+    // left
+    payloadCameraZ = String(currentCameraZ - (360 - zAxis));
+  }
+  return payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
+}
+
+bool isLeft(float param1, float param2, float param3, float param4) {
+  if (param1 < param2 && param3 > param4) {
+    return true;
+  }
+  return false;
+}
+
+bool isRight(float param1, float param2, float param3, float param4) {
+  if(param1 > param2 && param3 < param4) {
+    return true;
+  }
+  return false;
+}
 
 //    Serial.println("=======================================================");
 //    Serial.print("temp : ");Serial.println(mpu6050.getTemp());

@@ -19,7 +19,7 @@ public class CameraController : MonoBehaviour
   protected float digitalZ = 0.0f;
   private int axisHalfRotation = 180;
 
-  protected float buffer = 0.02f;
+  protected float buffer = -0.09f;
 
   // Start is called before the first frame update
   void Start()
@@ -49,8 +49,8 @@ public class CameraController : MonoBehaviour
       {
         serialPortInput = serialPort.ReadLine().Split(' ');
         physicalX = float.Parse(serialPortInput[0]);
-        physicalY = float.Parse(serialPortInput[1])*-1;
-        physicalZ = float.Parse(serialPortInput[2])*-1;
+        physicalY = float.Parse(serialPortInput[1]);
+        physicalZ = float.Parse(serialPortInput[2]);
         
         if(!IsInBufferRange(physicalY, 'y'))
         {
@@ -58,17 +58,7 @@ public class CameraController : MonoBehaviour
         }
         if(!IsInBufferRange(physicalZ, 'z'))
         {
-          print(physicalZ);
-          if(physicalZ < -30 && physicalZ > -100) 
-          {
-            digitalY -= 2;
-          } else if (physicalZ > -330 && physicalZ < -200)
-          {
-            digitalY += 2;
-          } else
-          {
-            digitalY = physicalZ; // yaw
-          }
+          digitalY = physicalZ; // yaw
         }
         if(!IsInBufferRange(physicalX, 'x'))
         {
@@ -161,7 +151,7 @@ public class CameraController : MonoBehaviour
   }
   Boolean IsInRange(float digitalAxis, float physicalDegrees)
   {
-    if(digitalAxis - physicalDegrees > -0.09f && digitalAxis - physicalDegrees < 0.09f ) {
+    if(digitalAxis - physicalDegrees > buffer && digitalAxis - physicalDegrees < buffer*-1 ) {
       return true; // 90 - 90.1 = -0.1 if(-0.1 > -0.2) true if(-0.1 < 0.2) true
     }              // 90 - 89.9 = 0.1 if(0.1 > -0.2) true if(0.1 < 0.2) true
     else {         // 90 - 90.3 = -0.3 if(-0.3 > -0.2) false if(-0.3 < 0.2) true
