@@ -7,10 +7,11 @@ using System.IO.Ports;
 public class CameraController : MonoBehaviour
 {
   private SerialPort serialPort = new SerialPort("/dev/cu.SLAB_USBtoUART", 9600);
-  private string[] serialPortInput = new string[3];
+  private string[] serialPortInput = new string[4];
   protected float physicalX = 0.0f;
   protected float physicalY = 0.0f;
   protected float physicalZ = 0.0f;
+  protected float physicalPanSideways = 0.0f;
 
   public GameObject camera;
   protected float speed = 5.0f;
@@ -51,6 +52,7 @@ public class CameraController : MonoBehaviour
         physicalX = float.Parse(serialPortInput[0]);
         physicalY = float.Parse(serialPortInput[1]);
         physicalZ = float.Parse(serialPortInput[2]);
+        physicalPanSideways = float.Parse(serialPortInput[3]);
         
         if(!IsInBufferRange(physicalY, 'y'))
         {
@@ -64,6 +66,13 @@ public class CameraController : MonoBehaviour
         {
           digitalZ = physicalX; // roll
         }
+
+        if (physicalPanSideways < -10) {
+          camera.transform.Translate(new Vector3((physicalPanSideways/10)*-1, 0, 0));
+        } else if (physicalPanSideways > 10) {
+          camera.transform.Translate(new Vector3((physicalPanSideways/10)*-1, 0, 0));
+        }
+
         Array.Clear(serialPortInput, 0, serialPortInput.Length);
       }
     }

@@ -12,6 +12,10 @@ const int resetCameraButtonPin = 14;
 int resetCameraButtonState = 0;
 bool resetButtonIsHeld = false;
 
+const int panCameraSidewaysPin = 15;
+int panCameraSidewaysState = 0;
+bool panCameraSidewaysButtonIsHeld = false;
+
 float fullRotation = 360.0;
 
 float currentCameraX = 0.0;
@@ -32,19 +36,19 @@ const float yawLeftMax = 240;
 String payloadCameraX;
 String payloadCameraY;
 String payloadCameraZ;
+float payloadPanSideways = 0.0;
 
 String payload;
 
 void setup() {
   pinMode(resetCameraButtonPin, INPUT);
+  pinMode(panCameraSidewaysPin, INPUT);
   
   Serial.begin(9600);
   Wire.begin();
   mpu6050.begin();
   mpu6050.calcGyroOffsets(true);
 }
-
-void(* resetFunc) (void) = 0;
 
 void loop() {
   mpu6050.update();
@@ -53,12 +57,15 @@ void loop() {
     Serial.flush();
     
     resetCameraButtonState = digitalRead(resetCameraButtonPin);
+    panCameraSidewaysState = digitalRead(panCameraSidewaysPin);
 
     resetIfPushed();
     
     physicalCameraX = mpu6050.getAngleX();
     physicalCameraY = mpu6050.getAngleY()*-1;
     physicalCameraZ = mpu6050.getAngleZ()*-1;
+
+    panSidewaysIfPushed();
 
     adjustRotation();
 
@@ -70,8 +77,31 @@ void loop() {
   }
 }
 
-void resetIfPushed() 
-{
+void panSidewaysIfPushed() {
+  if(panCameraSidewaysState == 1 && !panCameraSidewaysButtonIsHeld) {
+    panCameraSidewaysButtonIsHeld = true;
+    panSideways();
+        
+  } else if (panCameraSidewaysState == 0 && panCameraSidewaysButtonIsHeld) {
+    panCameraSidewaysButtonIsHeld = false;
+    payloadPanSideways = 0.0;
+    
+  } else if (panCameraSidewaysButtonIsHeld) {
+    panSideways();
+  }
+}
+
+void panSideways() {
+  if(physicalCameraX > 10 || physicalCameraX < -10) {
+    payloadPanSideways = physicalCameraX;
+    
+  } else {
+    payloadPanSideways = 0.0;
+  }
+  physicalCameraX = 0.0;
+}
+
+void resetIfPushed() {
   if(resetCameraButtonState == 1 && !resetButtonIsHeld) {
     resetButtonIsHeld = true;
     resetCamera();
@@ -101,11 +131,11 @@ void adjustRotation() {
 }
 
 String createPayload() {
-  if(isRight(physicalCameraZ, yawRightMin, physicalCameraZ, yawRightMax)) { // physicalCameraZ > yawRightMin && physicalCameraZ < yawRightMax
+  if(isRight(physicalCameraZ, yawRightMin, physicalCameraZ, yawRightMax)) {
     continuousYawRight();
     return assemblePayload(continuousYawCameraZ);
      
-  } else if (isLeft(physicalCameraZ, yawLeftMin, physicalCameraZ, yawLeftMax)) { // physicalCameraZ < yawLeftMin && physicalCameraZ > yawLeftMax
+  } else if (isLeft(physicalCameraZ, yawLeftMin, physicalCameraZ, yawLeftMax)) {
     continuousYawLeft();
     return assemblePayload(continuousYawCameraZ);
     
@@ -120,7 +150,7 @@ String createPayload() {
 void continuousYawRight() {
   if(!continuousYawRunning) {
     continuousYawRunning = true;
-    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ; // set to new null point, equal self + or - physicalCam
+    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ;
     continuousYawCameraZ += 2;
     
   } else {
@@ -132,7 +162,7 @@ void continuousYawLeft()
 {
   if(!continuousYawRunning) {
     continuousYawRunning = true;
-    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ; // set to new null point, equal self + or - physicalCam
+    continuousYawCameraZ = continuousYawCameraZ + physicalCameraZ;
     continuousYawCameraZ -= 2;
     
   } else {
@@ -142,10 +172,10 @@ void continuousYawLeft()
 
 void setCurrentCamera() {
   continuousYawRunning = false;
-  if(isRight(physicalCameraZ, 0, physicalCameraZ, 100)) { // physicalCameraZ > 0 && physicalCameraZ < 100
+  if(isRight(physicalCameraZ, 0, physicalCameraZ, 100)) {
     currentCameraZ = continuousYawCameraZ - physicalCameraZ;
     
-  } else if (isLeft(physicalCameraZ, 360, physicalCameraZ, 200)) { // physicalCameraZ < 360 && physicalCameraZ > 200
+  } else if (isLeft(physicalCameraZ, 360, physicalCameraZ, 200)) {
     currentCameraZ = continuousYawCameraZ + (360 - physicalCameraZ);
   }
 }
@@ -157,15 +187,15 @@ String assemblePayload(float zAxis) {
   if(continuousYawRunning) {
     payloadCameraZ = String(zAxis);
     
-  } else if (isRight(yawRightMin, zAxis, 0, zAxis)) { // zAxis < yawRightMin && zAxis > 0 // yawRightMin > zAxis && 0 < zAxis
+  } else if (isRight(yawRightMin, zAxis, 0, zAxis)) {
     // right
     payloadCameraZ = String(currentCameraZ + zAxis);
     
-  } else if (isLeft(yawLeftMin, zAxis, 360, zAxis)) { // zAxis > yawLeftMin && zAxis < 360 // yawLeftMin < zAxis && 360 > zAxis
+  } else if (isLeft(yawLeftMin, zAxis, 360, zAxis)) {
     // left
     payloadCameraZ = String(currentCameraZ - (360 - zAxis));
   }
-  return payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ;
+  return payloadCameraX + " " + payloadCameraY + " " + payloadCameraZ + " " + payloadPanSideways;
 }
 
 bool isLeft(float param1, float param2, float param3, float param4) {
