@@ -50,7 +50,6 @@ void setup() {
 //  Serial.begin(9600);
 //  Serial.begin(460800);
   ESP_BT.begin("ESP32_Nav"); //Name of your Bluetooth Signal
-  ESP_BT.println("test");
   
   Wire.begin();
   mpu6050.begin();
