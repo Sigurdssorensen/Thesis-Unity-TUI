@@ -6,6 +6,8 @@ public class MovementController : MonoBehaviour
 {
   protected GameObject imageTarget;
   public GameObject home;
+  public GameObject camera;
+  public CameraController cameraController;
 
   public float speed = 0.25f;
   public float speedIncrease = 0.5f;
@@ -17,11 +19,17 @@ public class MovementController : MonoBehaviour
   protected float imageTargetRealtimeZ;
   public float imageTargetSquaresX;
   public float imageTargetSquaresZ;
+
+  public float vectorX = 0f;
+  public float vectorZ = 0f;
+  public float rotationY = 0f;
+
   // Start is called before the first frame update
   void Start()
   {
     imageTarget = GameObject.Find("ImageTarget");
     home = GameObject.Find("Home");
+    cameraController = camera.GetComponent<CameraController>();
   }
 
   // Update is called once per frame
@@ -35,6 +43,20 @@ public class MovementController : MonoBehaviour
 
     UpdateXPosition();
     UpdateZPosition();
+
+    home.transform.rotation = Quaternion.Euler(
+      0f,
+      rotationY,
+      0f
+    );
+
+    rotationY = cameraController.digitalY;
+
+    home.transform.Translate(new Vector3(vectorX, 0f, 0f));
+    home.transform.Translate(new Vector3(0f, 0f, vectorZ));
+
+    imageTargetCentreX += vectorX;
+    imageTargetCentreZ += vectorZ;
 
     // if (Input.GetKey("w")) 
     // {
@@ -61,101 +83,23 @@ public class MovementController : MonoBehaviour
   void UpdateXPosition() 
   {
     // Super dry if check - refactor when possible
-    if(imageTargetSquaresX >= 10) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*8, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*8;
-    } else if(imageTargetSquaresX >= 9) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*7, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*7;
-    } else if(imageTargetSquaresX >= 8) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*6, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*6;
-    } else if(imageTargetSquaresX >= 7) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*5, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*5;
-    } else if(imageTargetSquaresX >= 6) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*4, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*4;
-    } else if(imageTargetSquaresX >= 5) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*3, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*3;
-    } else if(imageTargetSquaresX >= 4) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*2, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*2;
-    } else if(imageTargetSquaresX >= 3) {
-      home.transform.Translate(new Vector3(speed + speedIncrease*1, 0, 0));
-      imageTargetCentreX += speed + speedIncrease*1;
-    } else if(imageTargetSquaresX >= 2) {
-      home.transform.Translate(new Vector3(speed, 0, 0));
-      imageTargetCentreX += speed;
-    } else if(imageTargetSquaresX <= -10) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*8), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*8);
-    } else if(imageTargetSquaresX <= -9) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*7), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*7);
-    } else if(imageTargetSquaresX <= -8) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*6), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*6);
-    } else if(imageTargetSquaresX <= -7) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*5), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*5);
-    } else if(imageTargetSquaresX <= -6) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*4), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*4);
-    } else if(imageTargetSquaresX <= -5) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*3), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*3);
-    } else if(imageTargetSquaresX <= -4) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*2), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*2);
-    } else if(imageTargetSquaresX <= -3) {
-      home.transform.Translate(new Vector3(-(speed + speedIncrease*1), 0, 0));
-      imageTargetCentreX -= (speed + speedIncrease*1);
-    } else if(imageTargetSquaresX <= -2) {
-      home.transform.Translate(new Vector3(-speed, 0, 0));
-      imageTargetCentreX -= speed;
+    if(imageTargetSquaresX >= 2 && imageTargetSquaresX <= 10) {
+      vectorX = speed + speedIncrease*(imageTargetSquaresX-2);
+    } else if (imageTargetSquaresX <= -2 && imageTargetSquaresX >= -10) {
+      vectorX = -(speed + speedIncrease*((imageTargetSquaresX*-1)-2));
+    } else {
+      vectorX = 0f;
     }
   }
 
   void UpdateZPosition() 
   {
-    if(imageTargetSquaresZ >= 10){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*8)));
-      imageTargetCentreZ += (speed + speedIncrease*8);
-    } else if(imageTargetSquaresZ >= 9){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*7)));
-      imageTargetCentreZ += (speed + speedIncrease*7);
-    } else if(imageTargetSquaresZ >= 8){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*6)));
-      imageTargetCentreZ += (speed + speedIncrease*6);
-    } else if(imageTargetSquaresZ >= 7){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*5)));
-      imageTargetCentreZ += (speed + speedIncrease*5);
-    } else if(imageTargetSquaresZ >= 6){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*4)));
-      imageTargetCentreZ += (speed + speedIncrease*4);
-    } else if(imageTargetSquaresZ >= 5){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*3)));
-      imageTargetCentreZ += (speed + speedIncrease*3);
-    } else if(imageTargetSquaresZ >= 4){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*2)));
-      imageTargetCentreZ += (speed + speedIncrease*2);
-    } else if(imageTargetSquaresZ >= 3){
-      home.transform.Translate(new Vector3(0, 0, (speed + speedIncrease*1)));
-      imageTargetCentreZ += (speed + speedIncrease*1);
-    } else if(imageTargetSquaresZ >= 2){
-      home.transform.Translate(new Vector3(0, 0, speed));
-      imageTargetCentreZ += speed;
-    } else if(imageTargetSquaresZ <= -3) {
-      home.transform.Translate(new Vector3(0, 0, -(speed + speedIncrease*3)));
-      imageTargetCentreZ -= (speed + speedIncrease*3);
-    } else if(imageTargetSquaresZ <= -2){
-      home.transform.Translate(new Vector3(0, 0, -(speed + speedIncrease)));
-      imageTargetCentreZ -= (speed + speedIncrease);
-    } else if(imageTargetSquaresZ <= -1){
-      home.transform.Translate(new Vector3(0, 0, -speed));
-      imageTargetCentreZ -= speed;
+    if(imageTargetSquaresZ >= 2 && imageTargetSquaresZ <= 10) {
+      vectorZ = speed + speedIncrease*(imageTargetSquaresZ-2);
+    } else if (imageTargetSquaresZ <= -2 && imageTargetSquaresZ >= -10) {
+      vectorZ = -(speed + speedIncrease*((imageTargetSquaresZ*-1)-2));
+    } else {
+      vectorZ = 0f;
     }
   }
 }

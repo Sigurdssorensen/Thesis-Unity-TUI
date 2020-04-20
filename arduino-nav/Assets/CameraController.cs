@@ -21,9 +21,9 @@ public class CameraController : MonoBehaviour
   public GameObject camera;
   // public float speed = 0.25f;
   // public float speedIncrease = 0.5f;
-  protected float digitalX = 0.0f;
-  protected float digitalY = 0.0f;
-  protected float digitalZ = 0.0f;
+  public float digitalX = 0.0f;
+  public float digitalY = 0.0f;
+  public float digitalZ = 0.0f;
 
   protected float buffer = -0.09f;
 
@@ -58,7 +58,7 @@ public class CameraController : MonoBehaviour
   {
     camera.transform.rotation = Quaternion.Euler(
       digitalX,
-      digitalY,
+      0f,
       digitalZ
     );
     

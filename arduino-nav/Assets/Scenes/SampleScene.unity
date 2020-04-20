@@ -492,10 +492,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   home: {fileID: 565629483}
+  camera: {fileID: 868128026}
+  cameraController: {fileID: 0}
   speed: 0.25
   speedIncrease: 0.5
   imageTargetSquaresX: 0
   imageTargetSquaresZ: 0
+  vectorX: 0
+  vectorZ: 0
+  rotationY: 0
 --- !u!4 &565629485
 Transform:
   m_ObjectHideFlags: 0
@@ -651,6 +656,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   camera: {fileID: 868128026}
+  digitalX: 0
+  digitalY: 0
+  digitalZ: 0
 --- !u!81 &868128029
 AudioListener:
   m_ObjectHideFlags: 0
