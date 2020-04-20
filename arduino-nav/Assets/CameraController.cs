@@ -58,7 +58,7 @@ public class CameraController : MonoBehaviour
   {
     camera.transform.rotation = Quaternion.Euler(
       digitalX,
-      0f,
+      digitalY,
       digitalZ
     );
     

@@ -8,13 +8,17 @@ public class MovementController : MonoBehaviour
   public GameObject home;
   public GameObject camera;
   public CameraController cameraController;
+  public GameObject ARCamera;
 
   public float speed = 0.25f;
   public float speedIncrease = 0.5f;
 
   protected float imageTargetSquareSize = 0.03f;
-  protected float imageTargetCentreX = 149.5779f;
-  protected float imageTargetCentreZ = 37.7945491f + 10f;
+  // protected float imageTargetCentreX = 149.5779f;
+  // protected float imageTargetCentreZ = 37.7945491f + 10f;
+  protected float imageTargetCentreX;
+  protected float imageTargetCentreZ;
+
   protected float imageTargetRealtimeX;
   protected float imageTargetRealtimeZ;
   public float imageTargetSquaresX;
@@ -30,11 +34,16 @@ public class MovementController : MonoBehaviour
     imageTarget = GameObject.Find("ImageTarget");
     home = GameObject.Find("Home");
     cameraController = camera.GetComponent<CameraController>();
+    imageTargetCentreX = ARCamera.transform.position.x;
+    imageTargetCentreZ = ARCamera.transform.position.z;
   }
 
   // Update is called once per frame
   void Update()
   {
+    imageTargetCentreX = ARCamera.transform.position.x;
+    imageTargetCentreZ = ARCamera.transform.position.z;
+
     imageTargetRealtimeX = imageTarget.transform.position.x - imageTargetCentreX;
     imageTargetRealtimeZ = imageTarget.transform.position.z - imageTargetCentreZ;
 
@@ -55,8 +64,8 @@ public class MovementController : MonoBehaviour
     home.transform.Translate(new Vector3(vectorX, 0f, 0f));
     home.transform.Translate(new Vector3(0f, 0f, vectorZ));
 
-    imageTargetCentreX += vectorX;
-    imageTargetCentreZ += vectorZ;
+    // imageTargetCentreX += vectorX;
+    // imageTargetCentreZ += vectorZ;
 
     // if (Input.GetKey("w")) 
     // {
